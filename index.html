@@ -1,0 +1,213 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="UTF-8">
+<title>Farm Labor System</title>
+
+<style>
+body { font-family: Arial; background: #eef6f5; margin: 0; }
+.container { max-width: 900px; margin: 60px auto; padding: 20px; background: #fff; border-radius: 10px; }
+input, select { width: 100%; padding: 8px; margin: 5px 0; }
+button { padding: 10px; background: green; color: white; border: none; border-radius: 5px; margin-top: 10px; cursor: pointer; }
+.card { border: 1px solid #ccc; padding: 10px; margin: 10px 0; border-radius: 8px; }
+.switchBtn { background: blue; }
+</style>
+
+</head>
+<body>
+
+<!-- FARMER -->
+<div class="container" id="farmer">
+<h2>Farmer Dashboard
+<button class="switchBtn" onclick="switchDashboard()">Switch to Labor</button>
+</h2>
+
+<h3>Post Job</h3>
+
+<select id="workType">
+<option>Harvest</option>
+<option>Planting</option>
+<option>Weeding</option>
+</select>
+
+<input id="crop" placeholder="Crop">
+<input id="location" placeholder="Location">
+<input id="salary" placeholder="Salary">
+<input id="workers" placeholder="Workers Needed">
+
+<button onclick="postJob()">Post Job</button>
+
+<h3>Your Jobs</h3>
+<div id="fjobs"></div>
+
+<h3>Accepted Labor</h3>
+<div id="fhistory"></div>
+
+<button onclick="logout()">Logout</button>
+<button onclick="register()">Register</button>
+</div>
+
+<!-- LABOR -->
+<div class="container" id="labor" style="display:none;">
+<h2>Labor Dashboard
+<button class="switchBtn" onclick="switchDashboard()">Switch to Farmer</button>
+</h2>
+
+<h3>Available Jobs</h3>
+<div id="jobs"></div>
+
+<h3>Your Jobs</h3>
+<div id="accepted"></div>
+
+<button onclick="logout()">Logout</button>
+<button onclick="register()">Register</button>
+</div>
+
+<script>
+
+/* INIT */
+if(!localStorage.jobs) localStorage.jobs="[]";
+if(!localStorage.history) localStorage.history="[]";
+
+let currentView="farmer";
+
+/* SWITCH */
+function switchDashboard(){
+    if(currentView==="farmer"){
+        document.getElementById("farmer").style.display="none";
+        document.getElementById("labor").style.display="block";
+        currentView="labor";
+        loadLabor();
+    } else {
+        document.getElementById("labor").style.display="none";
+        document.getElementById("farmer").style.display="block";
+        currentView="farmer";
+        loadFarmer();
+    }
+}
+
+/* FARMER */
+function postJob(){
+
+    let work = document.getElementById("workType").value;
+    let cropVal = document.getElementById("crop").value.trim();
+    let locationVal = document.getElementById("location").value.trim();
+    let salaryVal = document.getElementById("salary").value.trim();
+    let workersVal = document.getElementById("workers").value.trim();
+
+    let jobs = JSON.parse(localStorage.jobs);
+
+    jobs.push({
+        work: work || "Not Provided",
+        crop: cropVal || "Not Provided",
+        location: locationVal || "Not Provided",
+        salary: salaryVal || "Not Provided",
+        workers: workersVal || "0",
+        accepted: 0
+    });
+
+    localStorage.jobs = JSON.stringify(jobs);
+
+    loadFarmer();
+}
+
+/* LOAD FARMER */
+function loadFarmer(){
+    let jobs = JSON.parse(localStorage.jobs);
+    let history = JSON.parse(localStorage.history);
+
+    let fjobs = document.getElementById("fjobs");
+    let fhistory = document.getElementById("fhistory");
+
+    fjobs.innerHTML="";
+    fhistory.innerHTML="";
+
+    jobs.forEach(j=>{
+        fjobs.innerHTML+=`
+        <div class="card">
+        ${j.work} - ${j.crop}<br>
+        📍 ${j.location}<br>
+        💰 ${j.salary}<br>
+        👷 ${j.accepted}/${j.workers}
+        </div>`;
+    });
+
+    history.forEach(h=>{
+        fhistory.innerHTML+=`
+        <div class="card">
+        Labor: ${h.labor}<br>
+        Work: ${h.work}<br>
+        📍 ${h.location}
+        </div>`;
+    });
+}
+
+/* LABOR */
+function loadLabor(){
+    let jobs = JSON.parse(localStorage.jobs);
+    let jobsDiv = document.getElementById("jobs");
+
+    jobsDiv.innerHTML="";
+
+    jobs.forEach((j,i)=>{
+        if(Number(j.accepted) < Number(j.workers)){
+            jobsDiv.innerHTML+=`
+            <div class="card">
+            ${j.work} - ${j.crop}<br>
+            📍 ${j.location}<br>
+            💰 ${j.salary}<br>
+            <button onclick="accept(${i})">Accept</button>
+            </div>`;
+        }
+    });
+
+    showAccepted();
+}
+
+/* ACCEPT */
+function accept(i){
+    let jobs = JSON.parse(localStorage.jobs);
+    let history = JSON.parse(localStorage.history);
+
+    jobs[i].accepted++;
+
+    history.push({
+        labor: "You",
+        work: jobs[i].work,
+        location: jobs[i].location
+    });
+
+    localStorage.jobs = JSON.stringify(jobs);
+    localStorage.history = JSON.stringify(history);
+
+    loadLabor();
+    loadFarmer();
+}
+
+/* SHOW ACCEPTED */
+function showAccepted(){
+    let history = JSON.parse(localStorage.history);
+    let accepted = document.getElementById("accepted");
+
+    accepted.innerHTML="";
+
+    history.forEach(h=>{
+        accepted.innerHTML+=`
+        <div class="card">
+        ${h.work}<br>
+        📍 ${h.location}
+        </div>`;
+    });
+}
+
+/* BASIC */
+function logout(){ alert("Logged out"); }
+function register(){ alert("Register"); }
+
+/* INIT LOAD */
+window.onload = loadFarmer;
+
+</script>
+
+</body>
+</html>
